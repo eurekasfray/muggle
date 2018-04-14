@@ -26,11 +26,9 @@ class Kernel:
         cwd = Path.cwd()
         cwd = Path.as_posix(cwd)
 
-        # If is the root path and no path has been specified, then the default to
-        # the search for the index.md file
+        # If is root path and no path has been specified, then set the index.md file as a default fallback.
         if path == '/':
             path = 'index.md'
-
         # Prepare file path by removing prepending slash so that the file
         # can be opened and read successfully.
         else:
