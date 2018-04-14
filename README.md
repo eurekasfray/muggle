@@ -17,7 +17,7 @@ Muggle is a simple markdown web server written in Python. It serves rendered mar
 
 - If we can document with rendered markdown, it would be easier to read documentation, enjoy it, structure it (because we now have it's big picture)
 - I love wikis because they are pleasant for viewing and reading, but they wikis are separate from code and can become out of sync.
-- I wanted to make build a server. I built my first server from [Ruslan Spivak](https://ruslanspivak.com/) in his [three](https://ruslanspivak.com/lsbaws-part1/) [part](http://ruslanspivak.com/lsbaws-part2/) [series](http://ruslanspivak.com/lsbaws-part3/): *Let's Build A Web Server*. If your interested, you may want to visit [mujina93/WSGIServer][wsgiserver_github], because some code in the series are no longer compatible since the introduction of Python 3. The [mujina93/WSGIServer][wsgiserver_github] repository provides Python 3 compatible code with extensive code documentation that dives into how Ruslan's code works.
+- I wanted to make build a server. I built my first server from [Ruslan Spivak](https://ruslanspivak.com/) in his [three](https://ruslanspivak.com/lsbaws-part1/) [part](http://ruslanspivak.com/lsbaws-part2/) [series](http://ruslanspivak.com/lsbaws-part3/): *Let's Build A Web Server*. If you're interested, you may want to visit [mujina93/WSGIServer][wsgiserver_github], because some code in the series are no longer compatible since the introduction of Python 3. The [mujina93/WSGIServer][wsgiserver_github] repository provides Python 3 compatible code with extensive code documentation that dives into how Ruslan's code works.
 
 ## Inspiration
 
@@ -44,11 +44,12 @@ Muggle is a simple markdown web server written in Python. It serves rendered mar
 * [ ] Server forever without dropping connections:
   * Currently connections are randomly dropping out
 * [ ] Repository directory (e.g. `.muggle`):
-  * This directory shall contain all custom muggle specifications, allowing users to keep custom settings for specific directory.
-  * [ ] Configuration file: Allow users to configure muggle upon launch
-    * [ ] Specify location of template file
-  * [ ] Template file: Allow users to
-* [ ] Extensive template language (logical or logicless?)
+  * This directory shall contain all Muggle configuration, allowing users to keep custom settings for specific directory.
+  * [ ] Configuration file (e.g. `muggle.json` or `.muggle/muggle.json`): Allow users to configure muggle upon launch
+    * [ ] Specify location of template source files
+  * [ ] Template data file: Allows users to input data into template file
+  * [ ] Template file: Allow users to design the look of the Markdown presentation
+* [ ] Extend template language (logical or logicless? extensive?)
   * [ ] Treat markdown as object with
     * Name
     * Title
@@ -56,12 +57,15 @@ Muggle is a simple markdown web server written in Python. It serves rendered mar
     * Headings
     * Size
     * Location
+    * URL
     * Table of content
+    * Flow block list (i.e. a sequence of flow blocks; for example: h1, p, p, ul)
 
 ## Credit
 
 * [`server.py`](https://github.com/mujina93/WSGIServer/blob/master/webserver2.py) was forked from [mujina93/WSGIServer][wsgiserver_github] in order to learn from it. I've decided not to remove it so that I may learn more about how a web server works as I continue to develop Muggle.
 * [`markdown2.py`](https://github.com/trentm/python-markdown2/blob/master/lib/markdown2.py) was taken from [trentm/python-markdown2](https://github.com/trentm/python-markdown2). It is used to render Markdown to HTML.
+* http://alexmic.net/building-a-template-engine/
 
 [wsgiserver_github]: https://github.com/mujina93/WSGIServer
 [docascode_article]: http://www.writethedocs.org/guide/docs-as-code/

@@ -1,7 +1,32 @@
 # Language Spec
 
-- All objects are array
+- Objects declared outside the program are array.
+- Objects declared in the program are variables.
 - Filter expression is left associated.
+
+# Compiler notes
+
+* Symbol table
+  * Names represent
+    * Variables - which have the following attributes:
+      * type
+      * line where declared
+      * scope
+      * lines where referenced
+    * Array - which have the following attributes:
+      * # of dimensions
+* Symbol tables are assigned to blocks. The symbol table for a block is assigned to the block's node so that the symbol table may be easily found and looked up.
+
+* Variables is a Python hash that stores the variables declared in the program. It is used during the target generation phase of the preprocessor. 
+* **Injected Variables** is a Python dictionary used to store dotted names declared outside the program. By outside names, I mean names injected by the preprocessor. A dotted name represents a multi-dimensional array. A dotted name is basically a map to Injected Variables. For instance `this.dotted.name` maps directly to `injected_variables["this"]["dotted"]["name"]`.
+
+# Types
+
+* Int
+* Float
+* String
+* Nil
+* Bool: `true` and `false`
 
 # Grammar
 
@@ -25,7 +50,6 @@ tags =
     for_tag |
     assign_tag |
     capture_tag ;
-
 
 print_tag =
     "{{" print_expr "}}" ;
@@ -72,9 +96,11 @@ decrement_tag =
 cond_expr =
     or_expr ;
 
+{* Logical OR expression *}
 or_expr  =
     and_expr {"or" and_expr} ;
 
+{* Logical AND expression *}
 and_expr =
     sameness_expr {"and" sameness_expr} ;
 
@@ -94,7 +120,8 @@ print_expr =
 filter =
     append_filter |
     sort_filter ;
-abs =
+
+abs_filter =
     "abs" ;
 
 append_filter =
