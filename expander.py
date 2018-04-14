@@ -381,10 +381,11 @@ class Lexer:
 
             # The following is a hacked (duct tape) solution: For some mysterious reason,
             # the ENDMARKER token is never ever captured by the regex scanner, no matter
-            # what character it is. It is currently defined as the NULL character (\x00).
-            # So in order to make the program work, I've 'duct taped' a solution to this
+            # what character it is. Currently, ENDMARKER is currently defined as the NULL character (\x00).
+            # In order to make the program work, I've 'duct taped' a solution to this
             # problem by hard coding the endmarker into the token list. Notice that the
-            # code for parsing the ENDMARKER in the scanner has been commented out.
+            # code for parsing the endmarker in the scanner has been commented out.
+            # With that said...
             #
             # If the endmarker is detected at the end of a chunk string, then
             # add the ENDMARKER token to the token list.
