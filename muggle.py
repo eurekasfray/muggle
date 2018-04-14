@@ -1,14 +1,11 @@
+import os
+import sys
+import argparse
+
+from pathlib import Path
 from server import WSGIServer
 from kernel import Kernel
-
-"""
-host and port used in this program. host is localhost.
-In this way, you can visit the service (when it is running)
-in a browser at localhost:8888
-Or you can visit it manually for example through
-telnet localhost 8888
-"""
-SERVER_ADDRESS = (HOST, PORT) = '', 8888
+from config import Config
 
 """
 Function that builds a WSGIServer object (the gateway),
@@ -17,11 +14,13 @@ The WSGI is something in between, which lets server and
 application/framework communicate. This is where the
 initialization is done.
 """
-def make_server(server_address, application):
+def make_server(server_address, application, config):
     # Builds WSGIServer object
     server = WSGIServer(server_address)
     # Sets the application
     server.set_app(application)
+    # Set the config
+    server.set_config(config)
     # Return 'server': the WSGIServer object
     return server
 
@@ -38,30 +37,52 @@ If this file is being imported from another module, __name__ will be
 set to the module's name.
 """
 if __name__ == '__main__':
-    # check that there is at least a command line argument
-    #if len(sys.argv) < 2:
-    #    sys.exit('Provide a WSGI application object as module:callable')
-    """
-    the first argument (after the executable's name) is the app path
-    in the format NAMEOFAPP:app
-    * NAMEOFAPP is the name of the app (e.g. if you have an app called
-                pyramidapp.py, NAMEOFAPP = pyramidapp)
-    * app is just the word 'app'. Inside the application module, there
-                must be an object called app which represents the app
-    """
-    #app_path = sys.argv[1]
-    #app_path = 'noodle:app'
-    # splits nameofthemodule and 'app'
-    #module, application = app_path.split(':')
-    # import the module and returns it
-    #module = __import__(module)
-    # gets the object 'app' from the imported module, and
-    # saves a referenece to the app object in 'application'
-    #application = getattr(module, application)
-    # builds the WSGI server at localhost
-    httpd = make_server(SERVER_ADDRESS, Kernel.app)
-    # print information about the running server
-    print('{server}: Serving HTTP on port {port} ...\n'.format(server=WSGIServer.SERVER_NAME,port=PORT))
-    # start serving, until manually interrupted, waiting for requests
-    # and serving responses by printing them in the terminal
-    httpd.serve_forever()
+
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [--version] [--help] option",
+        description="Serve rendered Markdown from a directory to your browser client."
+        )
+    group = parser.add_mutually_exclusive_group()
+    parser.add_argument("-v", "--version",
+        help="print Muggle version",
+        action="store_true"
+        )
+    group.add_argument("--init",
+        help="create new repository in PATH. If no PATH is supplied, then the new repository is initialized in current working directory.",
+        metavar="PATH",
+        nargs="?",
+        const=os.getcwd()
+        )
+    group.add_argument("--serve",
+        help="serve Markdown from PATH. If no PATH is supplied, then the Markdown is served from the current working directory.",
+        metavar="PATH",
+        nargs="?",
+        const=os.getcwd()
+        )
+
+    CONFIG_FILE_NAME = 'config.json'
+
+    args = parser.parse_args()
+    if args.init:
+        working_dir = args.init
+        config = Config(CONFIG_FILE_NAME, working_dir)
+        repo_dir = config.rd()
+        if (repo_dir.is_dir() and repo_dir.exists()):
+            sys.exit( "Muggle repository already exists in \"{working_directory}\"".format(working_directory=os.fspath(repo_dir.parent)) )
+        else:
+            repo_dir.mkdir()
+            sys.exit( "Initialized empty Muggle in \"{repo_dir}\"".format(repo_dir=os.fspath(repo_dir)) )
+    elif args.serve:
+        working_dir = args.serve
+        config = Config(CONFIG_FILE_NAME, working_dir)
+        httpd = make_server(config.server_address(), Kernel.app, config)
+        # print information about the running server
+        print('{server}: Serving HTTP on port {port} ...\n'.format(server=WSGIServer.SERVER_NAME,port=config.server_port()))
+        # start serving, until manually interrupted, waiting for requests
+        # and serving responses by printing them in the terminal
+        httpd.serve_forever()
+    elif args.version:
+         # display machine-friendly version information
+        print(' '.join([ WSGIServer.SERVER_NAME, WSGIServer.VERSION_STRING ]))
+    else:
+        parser.print_help()

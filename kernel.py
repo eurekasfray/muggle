@@ -12,63 +12,76 @@ and a function start_response with signature
 start_response(status, response_headers).
 """
 
+import os
 from pathlib import Path
 from markdown2 import Markdown
 from expander import Expander
 
 class Kernel:
 
-    def app(environ, start_response):
+    def app(environ, start_response, config):
         # The path for the markdown file
         path = environ['PATH_INFO']
 
-        # The current working directory
-        cwd = Path.cwd()
-        cwd = Path.as_posix(cwd)
-
-        # If is root path and no path has been specified, then set the index.md file as a default fallback.
+        # If is root path and no path has been specified, then set the index file as a default fallback.
         if path == '/':
-            path = 'index.md'
+            path = config.index_file_name()
         # Prepare file path by removing prepending slash so that the file
         # can be opened and read successfully.
         else:
             path = path[1:]
 
         # The markdown file
-        markdown_file = Path(path);
+        markdown_path = config.wd().joinpath(path);
 
-        if not (markdown_file.is_dir()) and markdown_file.exists() and (markdown_file.suffix == '.md' or markdown_file.suffix == '.markdown'):
+        if not (markdown_path.is_dir()) and markdown_path.exists() and (markdown_path.suffix == '.md' or markdown_path.suffix == '.markdown'):
 
             # The template file
-            template_file = Path('template.html')
+            template_path = config.template_file_path()
 
-            if (template_file.is_dir() and not template_file.exists()):
+            if (template_path.is_dir() and not template_path.exists()):
                 status = b'503 Service Unavailable'
                 content = [b'503 - Something went wrong. Template file could not be found. Please provide a template.html file']
             else:
                 # The markdown
-                markdown = markdown_file.read_bytes()
+                markdown = markdown_path.read_bytes()
                 markdown += b'\n'
                 markdowner = Markdown()
                 html = markdowner.convert(markdown)
 
                 # The template
-                template = template_file.read_text()
+                template = template_path.read_text()
 
                 # Expand the content
-                #expander = Expander('<html><body>Hello {\{ content \}}</body></html>', html)
                 expander = Expander(template, html)
                 html = expander.expand()
                 html = html.encode('utf-8')
 
                 # The return status
-                status = b'200 OK'
-                content = [html];
+                status = '200 OK'
+                content = [html]
         else:
+            # If index file could not be found, report it.
+            if markdown_path.name == config.index_file_name():
+                print(
+                    "Could not find the directory index file to display. "
+                    "Provide a directory index file by saving a file as "
+                    "\"{index_file_name}\"".format(index_file_name=config.index_file_name())
+                    )
+
             # The return status
-            status = b'404 Not Found'
-            # The file could not be found
-            content = [b'404 - Not found\n'];
+            status = '404 Not Found'
+            # The file could not be found.
+            if not config.notfound_file_path().is_dir() and config.notfound_file_path().exists():
+                html = config.notfound_file_path().read_text()
+                html = html.encode('utf-8')
+                content = [html]
+            # Oh the irony... The 404 error template could not be found, so send hand-written (app generated) error message.
+            else:
+                content = [
+                    b"<h1>404 Not Found</h1>"
+                    b"<p>The page you're looking for could not be found.</p>"
+                    ]
 
 
         # The headers are a list of 2-tuples like (name, type)

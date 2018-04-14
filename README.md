@@ -40,13 +40,14 @@ Muggle is a simple markdown web server written in Python. It serves rendered mar
 
 ### Later
 
-* [ ] Allow users to specify the serving directory from command line (e.g. `muggle serve <directory path>`). However, if no directory is specified (i.e. `muggle serve`), then it shall serve from the current working directory.
+* [x] Allow users to specify the serving directory from command line (e.g. `muggle serve <directory path>`). However, if no directory is specified (i.e. `muggle serve`), then it shall serve from the current working directory.
 * [ ] Server forever without dropping connections:
   * Currently connections are randomly dropping out
-* [ ] Repository directory (e.g. `.muggle`):
+* [x] Repository directory (e.g. `.muggle`):
   * This directory shall contain all Muggle configuration, allowing users to keep custom settings for specific directory.
-  * [ ] Configuration file (e.g. `muggle.json` or `.muggle/muggle.json`): Allow users to configure muggle upon launch
-    * [ ] Specify location of template source files
+  * [x] Configuration file (e.g. ~~`muggle.json` or `.muggle/muggle.json`~~ `.muggle/config.json`): Allow users to configure muggle upon launch
+    * [x] Specify location of template source files
+    * [ ] Specify the default extension for a Markdown document
   * [ ] Template data file: Allows users to input data into template file
   * [ ] Template file: Allow users to design the look of the Markdown presentation
 * [ ] Extend template language (logical or logicless? extensive?)

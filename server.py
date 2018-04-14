@@ -79,7 +79,10 @@ class WSGIServer(object):
     class constants
     """
     SERVER_NAME = "Muggle"
-    VERSION_STRING = "0.1.0"
+    VERSION_MAJOR = "0"
+    VERSION_MINOR = "1"
+    VERSION_PATCH = "0"
+    VERSION_STRING = ".".join([ VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH ])
 
     """
     class variables, shared by all instances of WSGIServer class
@@ -165,6 +168,13 @@ class WSGIServer(object):
     """
     def set_app(self, application):
         self.application = application
+
+    """
+    Store the config in the WSGI object.
+    """
+    def set_config(self, config):
+        self.config = config
+
     """
     starts serving, with an endless loop, doing continuously:
         self.listen_socket.accept() # accepting connection
@@ -249,7 +259,7 @@ class WSGIServer(object):
         When called by the server, the application object must return
         an iterable yielding zero or more strings ('result' here).
         """
-        result = self.application(env, self.start_response)
+        result = self.application(env, self.start_response, self.config)
 
         """
         The server or gateway transmits the yielded strings (by application)

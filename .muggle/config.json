@@ -1,0 +1,10 @@
+{
+    "server": {
+        "host": "",
+        "port": 8888,
+        "template-directory": "theme",
+        "template-filename": "template.html",
+        "404-filename": "404.html",
+        "directory-index": "index.md"
+    }
+}
