@@ -26,13 +26,13 @@ import re
 """
 the coordinator: This coordinates the operations of the process.
 """
-class Expander:
+class Preprocessor:
 
     def __init__(self, template, content):
         self.template = template
         self.content = content
 
-    def expand(self):
+    def process(self):
         # Call the lexer to get the tokens.
         lexer = Lexer(self.template)
         tokens = lexer.tokenize()

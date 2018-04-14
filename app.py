@@ -15,7 +15,7 @@ start_response(status, response_headers).
 import os
 from pathlib import Path
 from markdown2 import Markdown
-from expander import Expander
+from preprocessor import Preprocessor
 
 class Kernel:
 
@@ -53,8 +53,8 @@ class Kernel:
                 template = template_path.read_text()
 
                 # Expand the content
-                expander = Expander(template, html)
-                html = expander.expand()
+                preprocessor = Preprocessor(template, html)
+                html = preprocessor.process()
                 html = html.encode('utf-8')
 
                 # The return status

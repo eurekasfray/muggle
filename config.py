@@ -4,9 +4,11 @@ from pathlib import Path
 
 class Config:
 
+    REPO_DIR_NAME = ".muggle"
+
     def __init__(self, filename, working_dir):
         self.working_dir = Path(working_dir)
-        self.repo_dir = self.working_dir.joinpath('.muggle')
+        self.repo_dir = self.working_dir.joinpath(self.REPO_DIR_NAME)
         self.file = self.repo_dir.joinpath(filename)
         self.json = None
         self._load()

@@ -4,7 +4,7 @@ import argparse
 
 from pathlib import Path
 from server import WSGIServer
-from kernel import Kernel
+from app import Kernel
 from config import Config
 
 """
