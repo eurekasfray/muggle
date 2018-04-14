@@ -70,6 +70,8 @@ Python script. argv[0] = script name. argv[n] = n-th argument
 """
 import sys
 
+import time
+
 # WSGI program class definition
 class WSGIServer(object):
 
@@ -367,8 +369,8 @@ class WSGIServer(object):
     def start_response(self, status, response_headers, exc_info=None):
         # Add necessary server headers
         server_headers = [
-            ('Date', 'Tue, 31 Mar 2015 12:54:48 GMT'),
-            ('Server', ' '.join([ self.SERVER_NAME, self.VERSION_STRING ]))
+            ('Date', time.strftime("%a, %d %b %Y %H:%M:%S GMT")), # Example: Tue, 31 Mar 2015 12:54:48 GMT
+            ('Server', '/'.join([ self.SERVER_NAME, self.VERSION_STRING ]))
         ]
         # Stores headers by taking the status (passed to start_response),
         # the response_headers (passed to start_response by the app) and
