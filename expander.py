@@ -38,7 +38,7 @@ class Expander:
         tokens = lexer.tokenize()
         # Parse the tokens to get the nodes.
         parser = Parser(tokens, self.content)
-        nodes = parser.nodes()
+        nodes = parser.parse()
         # Get the HTML
         emitter = Emitter(nodes)
         return emitter.html()
