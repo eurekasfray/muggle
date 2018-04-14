@@ -21,6 +21,7 @@ Below is the process of how the expander interprets its source input:
 """
 
 import sys
+import re
 
 """
 the coordinator: This coordinates the operations of the process.
@@ -32,9 +33,14 @@ class Expander:
         self.content = content
 
     def expand(self):
+        # Call the lexer to get the tokens.
         lexer = Lexer(self.template)
-        parser = Parser(lexer.tokens(), self.content)
-        emitter = Emitter(parser.nodes())
+        tokens = lexer.tokenize()
+        # Parse the tokens to get the nodes.
+        parser = Parser(tokens, self.content)
+        nodes = parser.nodes()
+        # Get the HTML
+        emitter = Emitter(nodes)
         return emitter.html()
 
 """
@@ -102,12 +108,13 @@ class Parser:
     def __init__(self, tokens, content):
         self.content = content
         self.tokens = tokens
+        self.len = len(self.tokens)
         self.index = 0
 
-    def nodes(self):
-        self.node_list = []
+    def parse(self):
+        self.nodes = []
         self.html()
-        return self.node_list
+        return self.nodes
 
     def match(self, token_type):
         if (self.lookahead().type().value() == token_type.value()):
@@ -117,64 +124,71 @@ class Parser:
             return False
 
     def lookahead(self):
-        token = self.tokens[self.index]
-        return token
+        if (self.index < self.len):
+            token = self.tokens[self.index]
+            return token
+        else:
+            return None
 
     def next_token(self):
-        token = self.tokens[self.index]
-        self.index += 1
-        return token
+        if (self.index < self.len):
+            token = self.tokens[self.index]
+            self.index += 1
+            return token
+        else:
+            return None
 
     def html(self):
-        while (self.lookahead().type() == Lexer.TT_MACRO_START or self.lookahead().type() == Lexer.TT_TEXT):
-            if (self.lookahead().type() == Lexer.TT_MACRO_START):
+        while (self.lookahead().type() == Lexer.VARSTART or self.lookahead().type() == Lexer.TEXT):
+            if (self.lookahead().type() == Lexer.VARSTART):
                 self.content_macro()
-            elif (self.lookahead().type() == Lexer.TT_TEXT):
+            elif (self.lookahead().type() == Lexer.TEXT):
                 self.text()
         self.eos()
         return
 
     def content_macro(self):
         self.macro_start()
-        if (not (self.match(Lexer.TT_IDENTIFIER)) and self.lookahead().lexeme().value().lower() != 'content'):
-            self.expected(Lexer.TT_CONTENT, self.lookahead())
+        if (not (self.match(Lexer.IDENTIFIER)) and self.lookahead().lexeme().value().lower() != 'content'):
+            self.expected(Lexer.CONTENT, self.lookahead())
         self.macro_end()
-        self.node_list.append(ContentMacroNode(self.content))
+        self.nodes.append(ContentMacroNode(self.content))
 
     def macro_start(self):
-        if (not self.match(Lexer.TT_MACRO_START)):
-            self.expected(Lexer.TT_MACRO_START, self.lookahead())
+        if (not self.match(Lexer.VARSTART)):
+            self.expected(Lexer.VARSTART, self.lookahead())
     def macro_end(self):
-        if (not self.match(Lexer.TT_MACRO_END)):
-            self.expected(Lexer.TT_MACRO_END, self.lookahead())
+        if (not self.match(Lexer.VAREND)):
+            self.expected(Lexer.VAREND, self.lookahead())
 
     def text(self):
         target_token = self.lookahead()
-        if (not self.match(Lexer.TT_TEXT)):
-            self.expected(Lexer.TT_TEXT, self.lookahead())
-        self.node_list.append(TextNode(target_token.lexeme().value()))
+        if (not self.match(Lexer.TEXT)):
+            self.expected(Lexer.TEXT, self.lookahead())
+        self.nodes.append(TextNode(target_token.lexeme().value()))
 
     def eos(self):
-        if (not self.match(Lexer.TT_EOS)):
-            self.expected(Lexer.TT_EOS, self.lookahead())
+        if (not self.match(Lexer.ENDMARKER)):
+            self.expected(Lexer.ENDMARKER, self.lookahead())
 
-    def fail(self, s):
-        sys.exit("{p}: error: {s}".format(p=sys.argv[0], s=s))
+    def fail(self, message):
+        sys.exit("{program}: error: {message}".format(program=sys.argv[0], message=message))
 
-    def report(self, s):
-        self.fail("{s}".format(s=s))
+    def report(self, message):
+        self.fail("{message}".format(message=message))
 
-    def expected(self, assumption, actual):
-        self.report("expected: {assumption}; found {actual} ({lexeme})".format(assumption=assumption.description(), actual=actual.type().description(), lexeme=actual.lexeme().value()))
+    def expected(self, expected, found):
+        self.report("expected: {expected}; found {found} ({lexeme})".format(expected=expected.description(), found=found.type().description(), lexeme=found.lexeme().value()))
 
 
 """
 a value object.
 """
 class TokenType:
-    def __init__(self, token_type, description):
+    def __init__(self, token_type, description, pattern):
         self._type = token_type
         self._description = description
+        self._pattern = pattern
 
     def value(self):
         return self._type
@@ -182,17 +196,30 @@ class TokenType:
     def description(self):
         return self._description
 
+    def pattern(self):
+        return self._pattern
+
+    def match(self, test):
+        match = re.match(self._pattern, test)
+        if (match):
+            print (match.groups())
+        else:
+            print ("No match found")
+
 """
 a value object.
 """
 class Token:
 
-    def __init__(self, token_type, lexeme):
-        self._type = token_type
-        self._lexeme = lexeme
+    def __init__(self, type, lexeme):
+        self._type = type
+        self._lexeme = Lexeme(lexeme)
 
     def type(self):
         return self._type
+
+    def set_type(self, toktype):
+        self._type = toktype
 
     def lexeme(self):
         return self._lexeme
@@ -201,18 +228,20 @@ class Token:
 a value object.
 """
 class Lexeme:
-
-    def __init__(self):
-        self.lexeme = ''
+    def __init__(self, lexeme):
+        self._lexeme = lexeme
 
     def push(self, c):
-        self.lexeme += c
+        self._lexeme += c
+
+    def drop(self):
+        self._lexeme = self._lexeme[:-1]
 
     def flush(self):
-        self.lexeme = ''
+        self._lexeme = ''
 
     def value(self):
-        return self.lexeme
+        return self._lexeme
 
     def create():
         return Lexeme()
@@ -221,12 +250,13 @@ class Lexeme:
 a value object.
 """
 class Source:
+    ENDMARKER = '\x00'
 
     def __init__(self, source):
         # The source to translate
         self.source = source
-        # Append EOL indicator
-        self.source += '\x00'
+        # Append end-of-file indicator
+        self.source += self.ENDMARKER
         # Index pointer for the source
         self.i = 0
 
@@ -241,6 +271,9 @@ class Source:
         else:
             return -1
 
+    def skipchar(self):
+        self.nextchar();
+
     def lookahead(self):
         if (self.i < len(self.source)):
             c = self.source[self.i]
@@ -248,9 +281,9 @@ class Source:
         else:
             return -1
 
-
-    def is_end(self):
-        if (len(self.source) >= self.i):
+    def is_endmarker(self):
+        print("sl({}) = i=({})".format(len(self.source),self.i))
+        if (self.source[self.i] == self.ENDMARKER):
             return True
         else:
             return False
@@ -270,100 +303,93 @@ the caller.
 """
 class Lexer:
 
-    TT_MACRO_START = TokenType("macro-start","macro initiator")
-    TT_MACRO_END = TokenType("macro-end","macro terminator")
-    TT_IDENTIFIER = TokenType("identifier","identifier")
-    TT_TEXT = TokenType("text","body of text")
-    TT_EOS = TokenType("eos","end-of-string")
+    # Used to tokenize individual tokens
+    VARSTART         = TokenType("varstart",  "variable start",     r"\{\{")
+    VAREND           = TokenType("varend",    "variable end",       r"\}\}")
+    TAGSTART         = TokenType("tagstart",  "tag start",          r"\{\%")
+    TAGEND           = TokenType("tagend",    "tag end",            r"\%\}")
+    NUMBER           = TokenType("number",    "number",             r"([0-9]*\.)?[0-9]+")
+    STRING           = TokenType("str",       "string",             r"\".*?\"|\'.*?\'")
+    COLON            = TokenType("colon",     "colon",              r":")
+    PIPE             = TokenType("pipe",      "pipe",               r"\|")
+    LESSTHAN         = TokenType("lt",        "less than",          r"\<(?!=)")
+    LESSTHANEQUAL    = TokenType("lte",       "less than equal",    r"\<=")
+    GREATERTHAN      = TokenType("gt",        "greater than",       r"\>(?!=)")
+    GREATERTHANEQUAL = TokenType("gte",       "greater than equal", r"\>=")
+    EQUAL            = TokenType("equ",       "equal",              r"==")
+    NOTEQUAL         = TokenType("neq",       "not equal",          r"!=")
+    LPAREN           = TokenType("lparen",    "left parenthesis",   r"\(")
+    RPAREN           = TokenType("rparen",    "right parenthesis",  r"\)")
+    LBRACKET         = TokenType("lbracket",  "left bracket",       r"\[")
+    RBRACKET         = TokenType("rbracket",  "right bracket",      r"\]")
+    ASSIGN           = TokenType("assign",    "assign",             r"=(?!=)")
+    IDENTIFIER       = TokenType("id",        "identifier",         r"[A-Za-z_][A-Za-z0-9_]+")
+    ENDMARKER        = TokenType("endmarker", "ENDMARKER",          r"".join([Source.ENDMARKER]))
+    UNKNOWN          = TokenType("unknown",   "unknown",            r".*")
 
-    TT_CONTENT = TokenType("content","keyword")
+    # Identify static text (not used during scanning)
+    TEXT             = TokenType("static",    "static text",        r".*")
+
+    # Used to separate tags and static static from each other.
+    PARTIAL_TEMPLATE_PARSER = r"".join([ "(" , TAGSTART.pattern() , ".*?" , TAGEND.pattern() , "|" , VARSTART.pattern() , ".*?" , VAREND.pattern() , ")" ])
+    TEMPLATE_PARSER  = PARTIAL_TEMPLATE_PARSER
 
     def __init__(self, source):
         # The source to translate
         self.source = Source(source)
         # The list to store tokens
-        self.token_list = []
+        self.tokens = []
 
-    def tokens(self):
-        lexeme = Lexeme()
-        next_state = 'S1'
-        while (self.source.lookahead() != -1):
-            current_state = next_state
-            if (current_state == 'S1'): # Expect first {' or go collect text
-                if (self.source.lookahead() == '{'):
-                    lexeme.push(self.source.nextchar())
-                    next_state = 'S1.1'
-                elif (self.is_eos(self.source.lookahead())):
-                    next_state = 'S3'
-                else:
-                    next_state = 'S2'
-            elif (current_state == 'S1.1'): # Expect second '{' or go collect text
-                if (self.source.lookahead() == '{'):
-                    lexeme.push(self.source.nextchar())
-                    self.token_list.append(Token(Lexer.TT_MACRO_START, lexeme))
-                    lexeme = Lexeme.create()
-                    next_state = 'S1.1.1'
-                else:
-                    next_state = 'S2'
-            elif (current_state == 'S1.1.1'): # Skip whitespace; expect first '}' or go collect a series of any character
-                if (self.is_whitespace(self.source.lookahead())):
-                    self.source.nextchar()
-                    next_state = current_state
-                elif (self.source.lookahead() == '}'):
-                    lexeme.push(self.source.nextchar())
-                    next_state = 'S1.1.2'
-                else:
-                    next_state = 'S1.1.3'
-            elif (current_state == 'S1.1.2'): # Expect second '}'
-                if (self.source.lookahead() == '}'):
-                    lexeme.push(self.source.nextchar())
-                    self.token_list.append(Token(Lexer.TT_MACRO_END, lexeme))
-                    lexeme = Lexeme.create()
-                    next_state = 'S1'
-                else:
-                    next_state = 'S1.1.3'
-            elif (current_state == 'S1.1.3'): # Expect a series of any character
-                if (self.source.lookahead() == '}'):
-                    self.token_list.append(Token(Lexer.TT_IDENTIFIER, lexeme))
-                    lexeme = Lexeme.create()
-                    next_state = 'S1.1.1'
-                elif (self.is_eos(self.source.lookahead())):
-                    self.token_list.append(Token(Lexer.TT_IDENTIFIER, lexeme))
-                    lexeme = Lexeme.create()
-                    next_state = 'S3'
-                else:
-                    lexeme.push(self.source.nextchar())
-                    next_state = current_state
-            elif (current_state == 'S2'): # Expect text (i.e. any character)
-                if (self.source.lookahead() == '{'):
-                    self.token_list.append(Token(Lexer.TT_TEXT, lexeme))
-                    lexeme = Lexeme.create()
-                    next_state = 'S1'
-                elif (self.is_eos(self.source.lookahead())):
-                    self.token_list.append(Token(Lexer.TT_TEXT, lexeme))
-                    lexeme = Lexeme.create()
-                    next_state = 'S3'
-                else:
-                    lexeme.push(self.source.nextchar())
-                    next_state = current_state
-            elif (current_state == 'S3'): # Expect end-of-string
-                if (self.is_eos(self.source.lookahead())):
-                    lexeme.push('eos')
-                    self.token_list.append(Token(Lexer.TT_EOS, lexeme))
-                    lexeme = Lexeme.create()
-                    break
+    def tokenize(self):
+        # Split source into tag partials and static text.
+        regex = re.compile(self.PARTIAL_TEMPLATE_PARSER)
+        chunks = regex.split(self.source.value())
+
+        # For every tag partial met, break it down into tokens and add the token to the token list.
+        # However, if static text is met, then add the static text to the token list.
+        for chunk in chunks:
+
+            if (regex.match(chunk)):
+                scanner = re.Scanner([
+                    (self.VARSTART.pattern(), lambda scanner, token: Token(self.VARSTART, token)),
+                    (self.VAREND.pattern(), lambda scanner, token: Token(self.VAREND, token)),
+                    (self.TAGSTART.pattern(), lambda scanner, token: Token(self.TAGSTART, token)),
+                    (self.TAGEND.pattern(), lambda scanner, token: Token(self.TAGEND, token)),
+                    (self.NUMBER.pattern(), lambda scanner, token: Token(self.NUMBER, token)),
+                    (self.STRING.pattern(), lambda scanner, token: Token(self.STRING, token)),
+                    (self.COLON.pattern(), lambda scanner, token: Token(self.COLON, token)),
+                    (self.PIPE.pattern(), lambda scanner, token: Token(self.PIPE, token)),
+                    (self.LESSTHAN.pattern(), lambda scanner, token: Token(self.LESSTHAN, token)),
+                    (self.LESSTHANEQUAL.pattern(), lambda scanner, token: Token(self.LESSTHANEQUAL, token)),
+                    (self.GREATERTHAN.pattern(), lambda scanner, token: Token(self.GREATERTHAN, token)),
+                    (self.GREATERTHANEQUAL.pattern(), lambda scanner, token: Token(self.GREATERTHANEQUAL, token)),
+                    (self.EQUAL.pattern(), lambda scanner, token: Token(self.EQUAL, token)),
+                    (self.NOTEQUAL.pattern(), lambda scanner, token: Token(self.NOTEQUAL, token)),
+                    (self.LPAREN.pattern(), lambda scanner, token: Token(self.LPAREN, token)),
+                    (self.RPAREN.pattern(), lambda scanner, token: Token(self.RPAREN, token)),
+                    (self.LBRACKET.pattern(), lambda scanner, token: Token(self.LBRACKET, token)),
+                    (self.RBRACKET.pattern(), lambda scanner, token: Token(self.RBRACKET, token)),
+                    (self.ASSIGN.pattern(), lambda scanner, token: Token(self.ASSIGN, token)),
+                    (self.IDENTIFIER.pattern(), lambda scanner, token: Token(self.IDENTIFIER, token)),
+                    #(self.ENDMARKER.pattern(), lambda scanner, token: Token(self.ENDMARKER, token)),
+                    (r"\s+", lambda scanner, token: None),
+                    ])
+                for token in scanner.scan(chunk)[0]:
+                    self.tokens.append(token)
+            else:
+                self.tokens.append(Token(self.TEXT, chunk))
+
+            # The following is a hacked (duct tape) solution: For some mysterious reason,
+            # the ENDMARKER token is never ever captured by the regex scanner, no matter
+            # what character it is. It is currently defined as the NULL character (\x00).
+            # So in order to make the program work, I've 'duct taped' a solution to this
+            # problem by hard coding the endmarker into the token list. Notice that the
+            # code for parsing the ENDMARKER in the scanner has been commented out.
+            #
+            # If the endmarker is detected at the end of a chunk string, then
+            # add the ENDMARKER token to the token list.
+            if (chunk[-1:] == Source.ENDMARKER):
+                self.tokens.append(Token(self.ENDMARKER, Source.ENDMARKER))
 
         # Return token list
-        return self.token_list
-
-    def is_whitespace(self, c):
-        if (c == '\n' or c == '\r' or c == '\t' or c == '\v' or c == ' '):
-            return True
-        else:
-            return False
-
-    def is_eos(self, c):
-        if (c == '\x00'):
-            return True
-        else:
-            return False
+        return self.tokens
