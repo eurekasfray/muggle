@@ -1,68 +1,19 @@
 # Muggle, a markdown server
 
-Muggle is a simple markdown web server written in Python. It serves rendered markdown to clients.
+Muggle is a simple Markdown web server written in Python. It serves rendered Markdown to your browser. I wrote it to _1)_ enable the practice of [Docs as Code][docascode_article]; _2)_ because I believe that having the big picture of your documentation can make documentation easier to read, more enjoyable, and easier to compose; _3)_ I wanted to build a server. I was inspired by [g3doc](https://www.usenix.org/sites/default/files/conference/protected-files/srecon16europe_slides_macnamara.pdf) by Google and [allmark](https://allmark.io/).
 
-## Goal
+*Status: Unstable*
 
-- Build a markdown web server to enable [Docs as Code][docascode_article]
+# Features
 
-## Design
+- Render markdown from a directory
+- View the rendered markdown from your browser
 
-- Store markdown in codebase
-- Serve rendered version as webpage
-- rendered markdown to HTML with neatly designed theme
-- Small codebase
+# Build your own server
 
-## Why make it?
+I've always wanted to make build a server. In this project, I built my first server via [Ruslan Spivak](https://ruslanspivak.com/) in his [three](https://ruslanspivak.com/lsbaws-part1/) [part](http://ruslanspivak.com/lsbaws-part2/) [series](http://ruslanspivak.com/lsbaws-part3/): *Let's Build A Web Server*. If you're interested in building your own server, you may want to visit [mujina93/WSGIServer][wsgiserver_github], because some code in the series are no longer compatible since the introduction of Python 3. The [mujina93/WSGIServer][wsgiserver_github] repository provides Python 3 compatible code with extensive code documentation explains how Ruslan's code works.
 
-- If we can document with rendered markdown, it would be easier to read documentation, enjoy it, structure it (because we now have it's big picture)
-- I love wikis because they are pleasant for viewing and reading, but they wikis are separate from code and can become out of sync.
-- I wanted to make build a server. I built my first server from [Ruslan Spivak](https://ruslanspivak.com/) in his [three](https://ruslanspivak.com/lsbaws-part1/) [part](http://ruslanspivak.com/lsbaws-part2/) [series](http://ruslanspivak.com/lsbaws-part3/): *Let's Build A Web Server*. If you're interested, you may want to visit [mujina93/WSGIServer][wsgiserver_github], because some code in the series are no longer compatible since the introduction of Python 3. The [mujina93/WSGIServer][wsgiserver_github] repository provides Python 3 compatible code with extensive code documentation that dives into how Ruslan's code works.
-
-## Inspiration
-
-* [g3doc](https://www.usenix.org/sites/default/files/conference/protected-files/srecon16europe_slides_macnamara.pdf) by Google
-* [allmark](https://allmark.io/)
-
-## Features
-
-* Templating
-* Markdown
-
-## Roadmap
-
-### Proof of concept (early)
-
-* [x] Web server
-* [x] Render markdown to client
-* [x] Check for default index.md if no file is specified in resource URI path
-* [x] Template preprocessor
-
-### Later
-
-* [x] Allow users to specify the serving directory from command line (e.g. `muggle serve <directory path>`). However, if no directory is specified (i.e. `muggle serve`), then it shall serve from the current working directory.
-* [ ] Server forever without dropping connections:
-  * Currently connections are randomly dropping out
-* [x] Repository directory (e.g. `.muggle`):
-  * This directory shall contain all Muggle configuration, allowing users to keep custom settings for specific directory.
-  * [x] Configuration file (e.g. ~~`muggle.json` or `.muggle/muggle.json`~~ `.muggle/config.json`): Allow users to configure muggle upon launch
-    * [x] Specify location of template source files
-    * [ ] Specify the default extension for a Markdown document
-  * [ ] Template data file: Allows users to input data into template file
-  * [ ] Template file: Allow users to design the look of the Markdown presentation
-* [ ] Extend template language (logical or logicless? extensive?)
-  * [ ] Treat markdown as object with
-    * Name
-    * Title
-    * Content
-    * Headings
-    * Size
-    * Location
-    * URL
-    * Table of content
-    * Flow block list (i.e. a sequence of flow blocks; for example: h1, p, p, ul)
-
-## Credit
+# Credit
 
 * [`server.py`](https://github.com/mujina93/WSGIServer/blob/master/webserver2.py) was forked from [mujina93/WSGIServer][wsgiserver_github] in order to learn from it. I've decided not to remove it so that I may learn more about how a web server works as I continue to develop Muggle.
 * [`markdown2.py`](https://github.com/trentm/python-markdown2/blob/master/lib/markdown2.py) was taken from [trentm/python-markdown2](https://github.com/trentm/python-markdown2). It is used to render Markdown to HTML.
